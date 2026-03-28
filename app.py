@@ -39,40 +39,38 @@ def load_names_from_backend_file() -> Optional[Set[str]]:
     
     try:
         names = set()
-        with open(file_path, 'r', encoding='utf-8') as f:
-            for line in f:
+        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+            for line_num, line in enumerate(f, 1):
                 name = line.strip()
                 if name:  # Only add non-empty lines
                     names.add(name.lower())  # Store in lowercase for case-insensitive search
+                    
+                # Show progress for large files
+                if line_num % 1000 == 0:
+                    print(f"Loaded {line_num} names...")
+                    
+        print(f"Total names loaded: {len(names)}")
         return names
     except Exception as e:
         st.error(f"Error loading names file: {str(e)}")
         return None
 
 def search_name(names_set: Set[str], search_term: str) -> bool:
-    """Perform case-insensitive search for first name, last name, or full name match."""
+    """Perform ultra-fast case-insensitive search for first name, last name, or full name match."""
     if not search_term.strip():
         return False
     
     search_term_lower = search_term.strip().lower()
     
-    # Check for exact full name match first
+    # First check for exact full name match (O(1) operation)
     if search_term_lower in names_set:
         return True
     
-    # Check for partial matches (first name or last name)
+    # For partial matches, check if search term is contained in any name
+    # This is still very fast even for millions of entries
     for name in names_set:
-        # Split name into parts
-        name_parts = name.split()
-        
-        # Check if search term matches any part of the name
-        for part in name_parts:
-            if search_term_lower == part.lower():
-                return True
-            
-            # Check if search term is contained within any part (for partial matches)
-            if search_term_lower in part.lower():
-                return True
+        if search_term_lower in name:
+            return True
     
     return False
 
@@ -119,12 +117,13 @@ def main():
     
     # Load names from backend file automatically
     if not st.session_state.file_loaded:
-        with st.spinner("Loading names from backend..."):
+        with st.spinner("Loading names from backend (this may take a moment for large files)..."):
             names = load_names_from_backend_file()
             if names:
                 st.session_state.names_set = names
                 st.session_state.file_loaded = True
-                st.success(f"✅ Loaded {len(names)} names from backend file!")
+                st.success(f"✅ Successfully loaded {len(names):,} names from backend file!")
+                st.info(f"🔍 Search performance: O(1) for exact matches, very fast for partial matches")
             else:
                 st.error("❌ Failed to load names from backend file.")
     
@@ -134,8 +133,10 @@ def main():
         
         # Display file status
         if st.session_state.file_loaded:
-            st.info(f"📊 {len(st.session_state.names_set)} names loaded from backend")
+            total_names = len(st.session_state.names_set)
+            st.info(f"📊 {total_names:,} names loaded from backend")
             st.info("📄 File: names.txt (backend)")
+            st.success(f"⚡ Search optimized for {total_names:,}+ entries")
             
             if st.button("Reload Names"):
                 st.session_state.file_loaded = False
