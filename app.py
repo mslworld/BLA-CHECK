@@ -56,24 +56,29 @@ def load_names_from_backend_file() -> Optional[Set[str]]:
         st.error(f"Error loading names file: {str(e)}")
         return None
 
-def search_name(names_set: Set[str], search_term: str) -> bool:
-    """Perform ultra-fast case-insensitive search for first name, last name, or full name match."""
+def search_name_with_details(names_set: Set[str], search_term: str) -> tuple:
+    """Search names and return (found, matched_names, original_search)."""
     if not search_term.strip():
-        return False
+        return False, [], search_term.strip()
     
     search_term_lower = search_term.strip().lower()
+    matched_names = []
     
-    # First check for exact full name match (O(1) operation)
+    # Check for exact full name match first
     if search_term_lower in names_set:
-        return True
+        # Find the original case version from a temporary set
+        for name in names_set:
+            if name.lower() == search_term_lower:
+                matched_names.append(name.title())  # Return in title case
+                break
+        return True, matched_names, search_term.strip()
     
-    # For partial matches, check if search term is contained in any name
-    # This is still very fast even for millions of entries
+    # Check for partial matches
     for name in names_set:
         if search_term_lower in name:
-            return True
+            matched_names.append(name.title())  # Return in title case
     
-    return False
+    return len(matched_names) > 0, matched_names, search_term.strip()
 
 def call_fdnc_api(phone_number: str) -> Optional[str]:
     """Call the FDNC API with the given phone number."""
@@ -173,10 +178,33 @@ def main():
         if st.button("Search Name", type="primary"):
             if search_name_input.strip():
                 with st.spinner("Searching..."):
-                    is_found = search_name(st.session_state.names_set, search_name_input)
+                    is_found, matched_names, original_search = search_name_with_details(st.session_state.names_set, search_name_input)
                     
                     if is_found:
                         st.success("✅ Match Found")
+                        
+                        # Display matched names with highlighting
+                        st.markdown("### 📋 Matched Names:")
+                        
+                        for name in matched_names:
+                            # Create highlighted version
+                            name_lower = name.lower()
+                            search_lower = original_search.lower()
+                            
+                            # Find and highlight matching parts
+                            highlighted_name = name
+                            start_idx = name_lower.find(search_lower)
+                            
+                            if start_idx != -1:
+                                # Extract matching part and surrounding text
+                                before = name[:start_idx]
+                                match = name[start_idx:start_idx + len(original_search)]
+                                after = name[start_idx + len(original_search):]
+                                
+                                # Create highlighted version
+                                highlighted_name = f"{before}<mark style='background-color: yellow; color: black; font-weight: bold;'>{match}</mark>{after}"
+                            
+                            st.markdown(f"• {highlighted_name}", unsafe_allow_html=True)
                     else:
                         st.error("❌ No Result Found")
             else:
@@ -220,7 +248,7 @@ def main():
     st.markdown("---")
     st.markdown(
         "<div style='text-align: center; color: gray; font-size: small;'>"
-        "DNC-Name & FDNC Search Application • Built with Streamlit"
+        "Name & FDNC Search Application • Built with Streamlit"
         "</div>",
         unsafe_allow_html=True
     )
