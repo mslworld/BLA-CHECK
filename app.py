@@ -247,6 +247,31 @@ def main():
     # Google Search Section
     st.markdown("---")
     st.markdown("### 🔍 Google Search")
+    
+    # Add search input
+    search_query = st.text_input("Enter your search query:", placeholder="Search anything on Google...")
+    
+    if search_query:
+        # Create Google Search URL
+        google_search_url = f"https://www.google.com/search?q={search_query}"
+        
+        st.markdown(f"### 🔍 Search Results for: '{search_query}'")
+        st.markdown(f"[Click here to search on Google]({google_search_url})")
+        
+        # Alternative: Use iframe for Google Search (may have limitations)
+        st.markdown(
+            f"""
+            <iframe src="https://www.google.com/search?q={search_query}" 
+                    width="100%" 
+                    height="600" 
+                    frameborder="0">
+            </iframe>
+            """,
+            unsafe_allow_html=True
+        )
+    
+    # Original Google CSE (as backup)
+    st.markdown("### Or use Custom Search Engine:")
     st.markdown(
         """
         <script async src="https://cse.google.com/cse.js?cx=37c2351f685cd437d">
