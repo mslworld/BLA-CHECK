@@ -200,7 +200,6 @@ def main():
                     
                     if api_response is not None:
                         if api_response:
-                            st.success("✅ FDNC Record Found")
                             st.markdown("---")
                             st.subheader("FDNC Status:")
                             
