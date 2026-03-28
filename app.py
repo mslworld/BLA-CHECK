@@ -244,6 +244,18 @@ def main():
             else:
                 st.warning("⚠️ Please enter a phone number to search.")
     
+    # Google Search Section
+    st.markdown("---")
+    st.markdown("### 🔍 Google Search")
+    st.markdown(
+        """
+        <script async src="https://cse.google.com/cse.js?cx=37c2351f685cd437d">
+        </script>
+        <div class="gcse-search"></div>
+        """,
+        unsafe_allow_html=True
+    )
+    
     # Footer
     st.markdown("---")
     st.markdown(
