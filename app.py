@@ -87,45 +87,145 @@ def get_celebrity_info(name: str) -> Optional[dict]:
     """Search for celebrity/well-known personality information and image."""
     try:
         # Clean name for search
-        clean_name = re.sub(r'[^\w\s]', '', name).strip()
+        clean_name = re.sub(r'[^\w\s]', '', name).strip().lower()
         
-        # Search query for Google
-        search_query = f"{clean_name} celebrity actor singer famous person"
-        
-        # Use a simple image search (you can replace with proper API)
-        url = f"https://www.google.com/search?q={search_query}&tbm=isch"
-        
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        # Celebrity database with placeholder images
+        celebrity_db = {
+            'jennifer aniston': {
+                'real_name': 'Jennifer Aniston',
+                'profession': 'Actress',
+                'known_for': 'Friends, The Morning Show',
+                'image_url': 'https://picsum.photos/seed/jennifer-aniston/200/200'
+            },
+            'brad pitt': {
+                'real_name': 'Brad Pitt',
+                'profession': 'Actor',
+                'known_for': 'Fight Club, Once Upon a Time in Hollywood',
+                'image_url': 'https://picsum.photos/seed/brad-pitt/200/200'
+            },
+            'tom cruise': {
+                'real_name': 'Tom Cruise',
+                'profession': 'Actor',
+                'known_for': 'Mission Impossible, Top Gun',
+                'image_url': 'https://picsum.photos/seed/tom-cruise/200/200'
+            },
+            'angelina jolie': {
+                'real_name': 'Angelina Jolie',
+                'profession': 'Actress',
+                'known_for': 'Tomb Raider, Maleficent',
+                'image_url': 'https://picsum.photos/seed/angelina-jolie/200/200'
+            },
+            'leonardo dicaprio': {
+                'real_name': 'Leonardo DiCaprio',
+                'profession': 'Actor',
+                'known_for': 'Titanic, Inception, The Wolf of Wall Street',
+                'image_url': 'https://picsum.photos/seed/leonardo-dicaprio/200/200'
+            },
+            'scarlett johansson': {
+                'real_name': 'Scarlett Johansson',
+                'profession': 'Actress',
+                'known_for': 'Black Widow, Lost in Translation',
+                'image_url': 'https://picsum.photos/seed/scarlett-johansson/200/200'
+            },
+            'robert downey jr': {
+                'real_name': 'Robert Downey Jr.',
+                'profession': 'Actor',
+                'known_for': 'Iron Man, Sherlock Holmes',
+                'image_url': 'https://picsum.photos/seed/robert-downey/200/200'
+            },
+            'chris evans': {
+                'real_name': 'Chris Evans',
+                'profession': 'Actor',
+                'known_for': 'Captain America, Knives Out',
+                'image_url': 'https://picsum.photos/seed/chris-evans/200/200'
+            },
+            'emma stone': {
+                'real_name': 'Emma Stone',
+                'profession': 'Actress',
+                'known_for': 'La La Land, The Amazing Spider-Man',
+                'image_url': 'https://picsum.photos/seed/emma-stone/200/200'
+            },
+            'ryan reynolds': {
+                'real_name': 'Ryan Reynolds',
+                'profession': 'Actor',
+                'known_for': 'Deadpool, The Proposal',
+                'image_url': 'https://picsum.photos/seed/ryan-reynolds/200/200'
+            },
+            'dwayne johnson': {
+                'real_name': 'Dwayne Johnson',
+                'profession': 'Actor, Former Wrestler',
+                'known_for': 'Jumanji, Fast & Furious',
+                'image_url': 'https://picsum.photos/seed/dwayne-johnson/200/200'
+            },
+            'will smith': {
+                'real_name': 'Will Smith',
+                'profession': 'Actor, Rapper',
+                'known_for': 'Men in Black, The Pursuit of Happyness',
+                'image_url': 'https://picsum.photos/seed/will-smith/200/200'
+            },
+            'julia roberts': {
+                'real_name': 'Julia Roberts',
+                'profession': 'Actress',
+                'known_for': 'Pretty Woman, Erin Brockovich',
+                'image_url': 'https://picsum.photos/seed/julia-roberts/200/200'
+            },
+            'george clooney': {
+                'real_name': 'George Clooney',
+                'profession': 'Actor, Director',
+                'known_for': 'Ocean\'s Eleven, Gravity',
+                'image_url': 'https://picsum.photos/seed/george-clooney/200/200'
+            },
+            'meryl streep': {
+                'real_name': 'Meryl Streep',
+                'profession': 'Actress',
+                'known_for': 'The Devil Wears Prada, Sophie\'s Choice',
+                'image_url': 'https://picsum.photos/seed/meryl-streep/200/200'
+            },
+            'tom hanks': {
+                'real_name': 'Tom Hanks',
+                'profession': 'Actor',
+                'known_for': 'Forrest Gump, Cast Away',
+                'image_url': 'https://picsum.photos/seed/tom-hanks/200/200'
+            },
+            'sandra bullock': {
+                'real_name': 'Sandra Bullock',
+                'profession': 'Actress',
+                'known_for': 'The Blind Side, Gravity',
+                'image_url': 'https://picsum.photos/seed/sandra-bullock/200/200'
+            },
+            'keanu reeves': {
+                'real_name': 'Keanu Reeves',
+                'profession': 'Actor',
+                'known_for': 'The Matrix, John Wick',
+                'image_url': 'https://picsum.photos/seed/keanu-reeves/200/200'
+            },
+            'natalie portman': {
+                'real_name': 'Natalie Portman',
+                'profession': 'Actress',
+                'known_for': 'Black Swan, Star Wars',
+                'image_url': 'https://picsum.photos/seed/natalie-portman/200/200'
+            }
         }
         
-        response = requests.get(url, headers=headers, timeout=10)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        
-        # Find first image
-        img_tags = soup.find_all('img')
-        
-        if img_tags and len(img_tags) > 1:
-            img_url = img_tags[1].get('src')  # Skip Google logo
+        # Check if name matches any celebrity
+        if clean_name in celebrity_db:
+            celebrity = celebrity_db[clean_name]
             
-            if img_url and img_url.startswith('http'):
-                # Download image
-                img_response = requests.get(img_url, timeout=5)
-                if img_response.status_code == 200:
-                    try:
-                        img = Image.open(io.BytesIO(img_response.content))
-                        return {
-                            'name': name,
-                            'image': img,
-                            'found': True
-                        }
-                    except:
-                        pass
+            # Download image
+            img_response = requests.get(celebrity['image_url'], timeout=5)
+            if img_response.status_code == 200:
+                img = Image.open(io.BytesIO(img_response.content))
+                return {
+                    'name': celebrity['real_name'],
+                    'profession': celebrity['profession'],
+                    'known_for': celebrity['known_for'],
+                    'image': img,
+                    'found': True
+                }
         
         return None
         
     except Exception as e:
-        # Silently fail for celebrity search
         return None
 
 def call_fdnc_api(phone_number: str) -> Optional[str]:
@@ -265,15 +365,14 @@ def main():
                                     col1, col2 = st.columns([1, 2])
                                     
                                     with col1:
-                                        # Resize image for display
-                                        img = celebrity_info['image']
-                                        img.thumbnail((200, 200))
-                                        st.image(img, caption=f"{celebrity_info['name']}")
+                                        # Display image
+                                        st.image(celebrity_info['image'], caption=celebrity_info['name'], width=200)
                                     
                                     with col2:
-                                        st.markdown(f"**Name:** {celebrity_info['name']}")
-                                        st.markdown(f"**Status:** Well-known Personality/Celebrity")
-                                        st.markdown("*Image sourced from web search*")
+                                        st.markdown(f"**🎭 Name:** {celebrity_info['name']}")
+                                        st.markdown(f"**🎬 Profession:** {celebrity_info['profession']}")
+                                        st.markdown(f"**⭐ Known For:** {celebrity_info['known_for']}")
+                                        st.markdown("*Celebrity information from database*")
                                     
                                     st.markdown("---")
                                 else:
