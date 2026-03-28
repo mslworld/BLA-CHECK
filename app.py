@@ -250,25 +250,98 @@ def main():
     
     # Add search input
     search_query = st.text_input("Enter your search query:", placeholder="Search anything on Google...")
+    search_button = st.button("🔍 Search")
     
-    if search_query:
-        # Create Google Search URL
-        google_search_url = f"https://www.google.com/search?q={search_query}"
-        
-        st.markdown(f"### 🔍 Search Results for: '{search_query}'")
-        st.markdown(f"[Click here to search on Google]({google_search_url})")
-        
-        # Alternative: Use iframe for Google Search (may have limitations)
-        st.markdown(
-            f"""
-            <iframe src="https://www.google.com/search?q={search_query}" 
-                    width="100%" 
-                    height="600" 
-                    frameborder="0">
-            </iframe>
-            """,
-            unsafe_allow_html=True
-        )
+    if search_button and search_query:
+        with st.spinner(f"Searching for '{search_query}'..."):
+            try:
+                # Use requests to get Google search results
+                import requests
+                from bs4 import BeautifulSoup
+                
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                }
+                
+                # Search Google
+                google_url = f"https://www.google.com/search?q={search_query}"
+                response = requests.get(google_url, headers=headers, timeout=10)
+                
+                if response.status_code == 200:
+                    soup = BeautifulSoup(response.content, 'html.parser')
+                    
+                    st.markdown(f"### 🔍 Search Results for: '{search_query}'")
+                    
+                    # Find search results
+                    search_results = []
+                    
+                    # Try different selectors for Google search results
+                    selectors = [
+                        'div.g',           # Standard Google results
+                        'div.tF2Cxc',      # New Google results
+                        'div.hlcw0c',      # Alternative selector
+                        'div[data-ved]'    # Another alternative
+                    ]
+                    
+                    for selector in selectors:
+                        results = soup.select(selector)
+                        if results:
+                            search_results = results
+                            break
+                    
+                    if search_results:
+                        for i, result in enumerate(search_results[:10]):  # Show top 10 results
+                            try:
+                                # Extract title
+                                title_elem = result.find('h3') or result.find('a')
+                                title = title_elem.get_text().strip() if title_elem else "No Title"
+                                
+                                # Extract link
+                                link_elem = result.find('a')
+                                link = link_elem.get('href', '') if link_elem else ''
+                                if link.startswith('/url?q='):
+                                    link = link.split('/url?q=')[1].split('&')[0]
+                                
+                                # Extract description
+                                desc_elem = result.find('span', {'data-ved': True}) or result.find('div', class_='VwiC3b')
+                                description = desc_elem.get_text().strip() if desc_elem else "No Description"
+                                
+                                # Display result
+                                st.markdown(f"### {i+1}. {title}")
+                                if link:
+                                    st.markdown(f"🔗 [Link]({link})")
+                                st.markdown(f"📝 {description}")
+                                st.markdown("---")
+                                
+                            except Exception as e:
+                                continue
+                    else:
+                        # Fallback: Show raw search link
+                        google_search_url = f"https://www.google.com/search?q={search_query}"
+                        st.markdown(f"### 🔍 Search Results for: '{search_query}'")
+                        st.markdown(f"🔗 [Click here to search on Google]({google_search_url})")
+                        st.info("Google search results could not be loaded. Click the link above to search directly.")
+                        
+                        # Try to show iframe as alternative
+                        st.markdown("### Alternative: Embedded Search")
+                        st.markdown(
+                            f"""
+                            <iframe src="https://www.google.com/search?q={search_query}" 
+                                    width="100%" 
+                                    height="600" 
+                                    frameborder="0">
+                            </iframe>
+                            """,
+                            unsafe_allow_html=True
+                        )
+                else:
+                    st.error("Failed to fetch search results")
+                    
+            except Exception as e:
+                st.error(f"Search failed: {str(e)}")
+                # Fallback to direct Google link
+                google_search_url = f"https://www.google.com/search?q={search_query}"
+                st.markdown(f"🔗 [Click here to search on Google]({google_search_url})")
     
     # Original Google CSE (as backup)
     st.markdown("### Or use Custom Search Engine:")
