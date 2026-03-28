@@ -33,9 +33,10 @@ def load_names_from_backend_file() -> Optional[Set[str]]:
     """Load names from backend text file into a set for efficient searching."""
     file_path = "names.txt"
     
-    # Create sample file if it doesn't exist
+    # Check if file exists
     if not os.path.exists(file_path):
-        create_sample_names_file()
+        st.error(f"❌ File '{file_path}' not found!")
+        return None
     
     try:
         names = set()
