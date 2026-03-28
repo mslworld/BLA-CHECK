@@ -3,6 +3,9 @@ import requests
 from typing import Optional, Set
 import io
 import os
+from PIL import Image
+from bs4 import BeautifulSoup
+import re
 
 def create_sample_names_file() -> str:
     """Create a sample names file on the backend."""
@@ -80,8 +83,52 @@ def search_name_with_details(names_set: Set[str], search_term: str) -> tuple:
     
     return len(matched_names) > 0, matched_names, search_term.strip()
 
+def get_celebrity_info(name: str) -> Optional[dict]:
+    """Search for celebrity/well-known personality information and image."""
+    try:
+        # Clean name for search
+        clean_name = re.sub(r'[^\w\s]', '', name).strip()
+        
+        # Search query for Google
+        search_query = f"{clean_name} celebrity actor singer famous person"
+        
+        # Use a simple image search (you can replace with proper API)
+        url = f"https://www.google.com/search?q={search_query}&tbm=isch"
+        
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        
+        response = requests.get(url, headers=headers, timeout=10)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # Find first image
+        img_tags = soup.find_all('img')
+        
+        if img_tags and len(img_tags) > 1:
+            img_url = img_tags[1].get('src')  # Skip Google logo
+            
+            if img_url and img_url.startswith('http'):
+                # Download image
+                img_response = requests.get(img_url, timeout=5)
+                if img_response.status_code == 200:
+                    try:
+                        img = Image.open(io.BytesIO(img_response.content))
+                        return {
+                            'name': name,
+                            'image': img,
+                            'found': True
+                        }
+                    except:
+                        pass
+        
+        return None
+        
+    except Exception as e:
+        # Silently fail for celebrity search
+        return None
+
 def call_fdnc_api(phone_number: str) -> Optional[str]:
-    """Call the FDNC API with the given phone number."""
     try:
         if not phone_number.strip():
             return None
@@ -183,7 +230,7 @@ def main():
                     if is_found:
                         st.success("✅ Match Found")
                         
-                        # Display matched names with highlighting
+                        # Display matched names with highlighting and celebrity info
                         st.markdown("### 📋 Matched Names:")
                         
                         for name in matched_names:
@@ -204,7 +251,34 @@ def main():
                                 # Create highlighted version
                                 highlighted_name = f"{before}<mark style='background-color: yellow; color: black; font-weight: bold;'>{match}</mark>{after}"
                             
+                            # Display name with highlighting
                             st.markdown(f"• {highlighted_name}", unsafe_allow_html=True)
+                            
+                            # Search for celebrity information
+                            with st.spinner(f"Searching for celebrity info for {name}..."):
+                                celebrity_info = get_celebrity_info(name)
+                                
+                                if celebrity_info and celebrity_info['found']:
+                                    st.markdown(f"### 🌟 Celebrity Match Found!")
+                                    
+                                    # Create two columns for image and info
+                                    col1, col2 = st.columns([1, 2])
+                                    
+                                    with col1:
+                                        # Resize image for display
+                                        img = celebrity_info['image']
+                                        img.thumbnail((200, 200))
+                                        st.image(img, caption=f"{celebrity_info['name']}")
+                                    
+                                    with col2:
+                                        st.markdown(f"**Name:** {celebrity_info['name']}")
+                                        st.markdown(f"**Status:** Well-known Personality/Celebrity")
+                                        st.markdown("*Image sourced from web search*")
+                                    
+                                    st.markdown("---")
+                                else:
+                                    st.info(f"No celebrity information found for '{name}'")
+                                    st.markdown("---")
                     else:
                         st.error("❌ No Result Found")
             else:
