@@ -177,7 +177,6 @@ def main():
                     
                     if is_found:
                         st.success("✅ Match Found")
-                        st.balloons()
                     else:
                         st.error("❌ No Result Found")
             else:
