@@ -2,34 +2,79 @@ import streamlit as st
 import requests
 from typing import Optional, Set
 import io
+import os
 
-def load_names_from_file(uploaded_file) -> Optional[Set[str]]:
-    """Load names from uploaded text file into a set for efficient searching."""
+def create_sample_names_file() -> str:
+    """Create a sample names file on the backend."""
+    sample_names = [
+        "John Smith",
+        "Jane Doe", 
+        "Michael Johnson",
+        "Emily Davis",
+        "Robert Wilson",
+        "Sarah Brown",
+        "David Miller",
+        "Lisa Anderson",
+        "James Taylor",
+        "Mary Thomas"
+    ]
+    
+    file_path = "names.txt"
     try:
-        if uploaded_file is not None:
-            # Read file content
-            stringio = io.StringIO(uploaded_file.getvalue().decode("utf-8"))
-            names = set()
-            
-            # Read each line and add to set (strip whitespace)
-            for line in stringio:
+        with open(file_path, 'w', encoding='utf-8') as f:
+            for name in sample_names:
+                f.write(name + '\n')
+        return file_path
+    except Exception as e:
+        st.error(f"Error creating sample file: {str(e)}")
+        return None
+
+def load_names_from_backend_file() -> Optional[Set[str]]:
+    """Load names from backend text file into a set for efficient searching."""
+    file_path = "names.txt"
+    
+    # Create sample file if it doesn't exist
+    if not os.path.exists(file_path):
+        create_sample_names_file()
+    
+    try:
+        names = set()
+        with open(file_path, 'r', encoding='utf-8') as f:
+            for line in f:
                 name = line.strip()
                 if name:  # Only add non-empty lines
                     names.add(name.lower())  # Store in lowercase for case-insensitive search
-            
-            return names
+        return names
     except Exception as e:
-        st.error(f"Error loading file: {str(e)}")
+        st.error(f"Error loading names file: {str(e)}")
         return None
 
 def search_name(names_set: Set[str], search_term: str) -> bool:
-    """Perform case-insensitive exact match search."""
+    """Perform case-insensitive search for first name, last name, or full name match."""
     if not search_term.strip():
         return False
     
-    # Convert search term to lowercase for case-insensitive comparison
     search_term_lower = search_term.strip().lower()
-    return search_term_lower in names_set
+    
+    # Check for exact full name match first
+    if search_term_lower in names_set:
+        return True
+    
+    # Check for partial matches (first name or last name)
+    for name in names_set:
+        # Split name into parts
+        name_parts = name.split()
+        
+        # Check if search term matches any part of the name
+        for part in name_parts:
+            if search_term_lower == part.lower():
+                return True
+            
+            # Check if search term is contained within any part (for partial matches)
+            if search_term_lower in part.lower():
+                return True
+    
+    return False
 
 def call_fdnc_api(phone_number: str) -> Optional[str]:
     """Call the FDNC API with the given phone number."""
@@ -69,38 +114,32 @@ def main():
     # Initialize session state
     if 'names_set' not in st.session_state:
         st.session_state.names_set = None
-    if 'file_uploaded' not in st.session_state:
-        st.session_state.file_uploaded = False
+    if 'file_loaded' not in st.session_state:
+        st.session_state.file_loaded = False
     
-    # Sidebar for file upload
+    # Load names from backend file automatically
+    if not st.session_state.file_loaded:
+        with st.spinner("Loading names from backend..."):
+            names = load_names_from_backend_file()
+            if names:
+                st.session_state.names_set = names
+                st.session_state.file_loaded = True
+                st.success(f"✅ Loaded {len(names)} names from backend file!")
+            else:
+                st.error("❌ Failed to load names from backend file.")
+    
+    # Sidebar for file information
     with st.sidebar:
-        st.header("📁 File Upload")
-        uploaded_file = st.file_uploader(
-            "Upload a .txt file with names (one per line)",
-            type=['txt'],
-            help="Upload a text file containing names, with each name on a separate line."
-        )
-        
-        if uploaded_file is not None:
-            if not st.session_state.file_uploaded or uploaded_file != st.session_state.get('last_file'):
-                with st.spinner("Loading names..."):
-                    names = load_names_from_file(uploaded_file)
-                    if names:
-                        st.session_state.names_set = names
-                        st.session_state.file_uploaded = True
-                        st.session_state.last_file = uploaded_file
-                        st.success(f"✅ Loaded {len(names)} names successfully!")
-                    else:
-                        st.session_state.file_uploaded = False
-                        st.error("❌ Failed to load names from file.")
+        st.header("📁 File Information")
         
         # Display file status
-        if st.session_state.file_uploaded:
-            st.info(f"📊 {len(st.session_state.names_set)} names loaded")
-            if st.button("Clear File"):
+        if st.session_state.file_loaded:
+            st.info(f"📊 {len(st.session_state.names_set)} names loaded from backend")
+            st.info("📄 File: names.txt (backend)")
+            
+            if st.button("Reload Names"):
+                st.session_state.file_loaded = False
                 st.session_state.names_set = None
-                st.session_state.file_uploaded = False
-                st.session_state.last_file = None
                 st.rerun()
     
     # Main content area
@@ -117,16 +156,16 @@ def main():
     if search_mode == "Name Search":
         st.subheader("👤 Name Search")
         
-        # Check if file is uploaded
-        if not st.session_state.file_uploaded:
-            st.warning("⚠️ Please upload a .txt file first to enable name search.")
+        # Check if names are loaded
+        if not st.session_state.file_loaded:
+            st.warning("⚠️ Names are not loaded from backend file.")
             return
         
         # Name search interface
         search_name_input = st.text_input(
             "Enter name to search:",
-            placeholder="Type a name...",
-            help="Enter the exact name to search for (case-insensitive)"
+            placeholder="Type a name (first name, last name, or full name)...",
+            help="Enter first name, last name, or full name. Search is case-insensitive and supports partial matches."
         )
         
         if st.button("Search Name", type="primary"):
