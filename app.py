@@ -201,8 +201,16 @@ def main():
                     if api_response is not None:
                         if api_response:
                             st.success("✅ FDNC Record Found")
-                            st.subheader("Raw Response:")
-                            st.code(api_response, language="text")
+                            st.markdown("---")
+                            st.subheader("FDNC Status:")
+                            
+                            if api_response == "1":
+                                st.markdown('<h3 style="color: red;">FDNC REGISTER</h3>', unsafe_allow_html=True)
+                            elif api_response == "0":
+                                st.markdown('<h3 style="color: green;">CLEAN</h3>', unsafe_allow_html=True)
+                            else:
+                                st.subheader("Raw Response:")
+                                st.code(api_response, language="text")
                         else:
                             st.error("❌ No Record Found")
                     else:
