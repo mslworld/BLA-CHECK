@@ -220,7 +220,7 @@ def main():
     st.markdown("---")
     st.markdown(
         "<div style='text-align: center; color: gray; font-size: small;'>"
-        "Name & FDNC Search Application • Built with Streamlit"
+        "DNC-Name & FDNC Search Application • Built with Streamlit"
         "</div>",
         unsafe_allow_html=True
     )
